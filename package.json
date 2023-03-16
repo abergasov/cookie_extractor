@@ -1,0 +1,18 @@
+{
+  "name": "cookie_extractor",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:abergasov/cookie_extractor.git",
+  "author": "Alejandro <abergasov@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "node src/index.js"
+  },
+  "dependencies": {
+    "@chainsafe/dappeteer": "^5.0.1",
+    "@synthetixio/synpress": "^3.5.1",
+    "ethers": "^6.1.0",
+    "puppeteer": "^19.7.5"
+  }
+}
