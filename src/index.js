@@ -13,33 +13,22 @@ const bidsURL = 'https://core-api.prod.blur.io/v1/collections/ailoverse-cats/exe
         {
             seed: wallet.mnemonic.phrase,
             password: "IpakgABrNGuqMKCIucArDNho90m",
-            // headless: false,
+            headless: false,
         }
     );
     let connectIterations = 0;
-    setTimeout(() => {
-        browser.close(); // close browser after 60 seconds
-    }, 60000);
-
-    // create a new page and visit blur
-    const blurPage = await browser.newPage();
-    await blurPage.getSource().setRequestInterception(true);
-    blurPage.getSource().on('request', blurInterceptor);
-    await blurPage.goto(url,{waitUntil: 'load'});
-
-    // connect MetaMask to blur
-    await (await blurPage.waitForSelector('text/connect wallet')).click();
-    await (await blurPage.waitForSelector('#METAMASK')).click();
-
     browser.getSource().on('targetcreated', async (target) => {
+        console.log("target created")
         const tPage = await target.page();
         if (!tPage) return;
         const title = await tPage.title();
+        console.log("title: ", title)
         if (title !== 'MetaMask Notification') return;
         try {
             const titleItem = await tPage.waitForSelector(".permissions-connect-header__title", { timeout: 3000 })
             const title = await titleItem.evaluate(el => el.textContent)
             if (title === 'Connect with MetaMask') {
+                console.log("Connect with MetaMask")
                 const button = await tPage.waitForSelector("button.button.btn-primary");
                 if (button) await button.click();
 
@@ -54,6 +43,22 @@ const bidsURL = 'https://core-api.prod.blur.io/v1/collections/ailoverse-cats/exe
             connectIterations++;
         }
     });
+    setTimeout(async () => {
+        console.log("timeout, close browser");
+        await browser.close();
+        process.exit()
+    }, 60000);
+
+    console.log("create a new page and visit blur");
+    const blurPage = await browser.newPage();
+    await blurPage.getSource().setRequestInterception(true);
+    blurPage.getSource().on('request', blurInterceptor);
+    await blurPage.goto(url,{waitUntil: 'load'});
+
+    console.log("connect MetaMask to blur");
+    await (await blurPage.waitForSelector('text/connect wallet')).click();
+    await (await blurPage.waitForSelector('#METAMASK')).click();
+    console.log("connect clicked");
 
     function waitForChange() {
         return new Promise(resolve => {
@@ -79,7 +84,9 @@ const bidsURL = 'https://core-api.prod.blur.io/v1/collections/ailoverse-cats/exe
     const cookies = await blurPage.getSource().cookies();
     const cookieString = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
     fs.appendFileSync('cookies.yml', `\n  - "${cookieString}"`);
+    console.log("cookies extracted, close browser")
     await browser.close();
+    process.exit()
 })();
 
 function blurInterceptor(interceptedRequest) {
