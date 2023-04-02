@@ -13,6 +13,8 @@
     "@chainsafe/dappeteer": "^5.0.1",
     "@synthetixio/synpress": "^3.5.1",
     "ethers": "^6.1.0",
+    "js-yaml": "^4.1.0",
+    "jwt-decode": "^3.1.2",
     "puppeteer": "^19.7.5"
   }
 }

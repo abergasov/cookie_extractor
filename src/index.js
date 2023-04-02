@@ -1,11 +1,14 @@
 import dappeteer from '@chainsafe/dappeteer';
 import { ethers } from "ethers";
 import fs from 'fs';
+import yaml from 'js-yaml';
+import jwt_decode from "jwt-decode";
 
 const url = 'https://blur.io/collection/ailoverse-cats/bids';
 const bidsURL = 'https://core-api.prod.blur.io/v1/collections/ailoverse-cats/executable-bids';
 
 (async () => {
+    cleanupCookies()
     const wallet = ethers.Wallet.createRandom();
     console.log('mnemonic:', wallet.mnemonic.phrase)
 
@@ -98,4 +101,28 @@ function blurInterceptor(interceptedRequest) {
         url.endsWith('.otf') ||
         url.endsWith('.png');
     skip ? interceptedRequest.abort() : interceptedRequest.continue();
+}
+
+function cleanupCookies() {
+    const doc = yaml.load(fs.readFileSync('cookies.yml', 'utf8'));
+    let resultCookie = [];
+    for (let cookie of doc.cookies) {
+        const cookieList = cookie.split(';');
+        const decoded = jwt_decode(cookieList[1]);
+        if (decoded.exp > (Date.now() / 1000) + (3 * 86400)) { // 3 days from now
+            resultCookie.push(cookie);
+        }
+    }
+    doc.cookies = resultCookie;
+    fs.writeFileSync('cookies.yml', yaml.dump(doc, {
+        styles: {
+            '!!null': 'canonical', // dump null as ~
+            '!!str': 'single',
+            '!!seq': 'block',
+        },
+        lineWidth: -1,          // set to -1 to disable line wrapping
+        quotingType: '"',
+        forceQuotes: true,
+    }));
+    console.log("cookie filtered")
 }
