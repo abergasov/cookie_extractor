@@ -4,3 +4,4 @@ node_modules/
 !.cache/puppeteer/.gitkeep
 yarn-error.log
 cookies.yml
+.env

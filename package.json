@@ -7,11 +7,13 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "node src/index.js"
+    "dev": "node src/index.js",
+    "owner": "node src/index.js owner"
   },
   "dependencies": {
     "@chainsafe/dappeteer": "^5.0.1",
     "@synthetixio/synpress": "^3.5.1",
+    "dotenv": "^16.0.3",
     "ethers": "^6.1.0",
     "js-yaml": "^4.1.0",
     "jwt-decode": "^3.1.2",

@@ -3,22 +3,39 @@ import { ethers } from "ethers";
 import fs from 'fs';
 import yaml from 'js-yaml';
 import jwt_decode from "jwt-decode";
+import dotenv from 'dotenv';
+dotenv.config();
 
 const url = 'https://blur.io/collection/ailoverse-cats/bids';
 const bidsURL = 'https://core-api.prod.blur.io/v1/collections/ailoverse-cats/executable-bids';
 
 (async () => {
     cleanupCookies()
-    const wallet = ethers.Wallet.createRandom();
-    console.log('mnemonic:', wallet.mnemonic.phrase)
+    const isOwnerMode = process.argv.slice(2).length > 0;
+    // depending from script param create random wallet or use mnemonic from env
+    const wallet = isOwnerMode ? new ethers.Wallet(process.env.PK) : ethers.Wallet.createRandom();
+
+    let launchOptions = {
+        password: "IpakgABrNGuqMKCIucArDNho90m",
+        headless: false,
+    }
+    if (isOwnerMode) {
+        console.log("use account: ", wallet.address)
+    } else {
+        console.log('mnemonic:', wallet.mnemonic.phrase)
+        launchOptions.seed = wallet.mnemonic.phrase;
+    }
 
     const { metaMask, browser } = await dappeteer.bootstrap(
         {
-            seed: wallet.mnemonic.phrase,
+           // seed: wallet.mnemonic.phrase,
             password: "IpakgABrNGuqMKCIucArDNho90m",
             headless: false,
         }
     );
+    if (isOwnerMode) {
+        await metaMask.importPK(wallet.privateKey)
+    }
     let connectIterations = 0;
     browser.getSource().on('targetcreated', async (target) => {
         console.log("target created")
@@ -86,7 +103,7 @@ const bidsURL = 'https://core-api.prod.blur.io/v1/collections/ailoverse-cats/exe
     console.log("account connected, extract cookies")
     const cookies = await blurPage.getSource().cookies();
     const cookieString = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
-    fs.appendFileSync('cookies.yml', `\n  - "${cookieString}"`);
+    isOwnerMode ? saveOwnerCookie(cookieString) : saveNewCookie(cookieString);
     console.log("cookies extracted, close browser")
     await browser.close();
     process.exit()
@@ -103,6 +120,18 @@ function blurInterceptor(interceptedRequest) {
     skip ? interceptedRequest.abort() : interceptedRequest.continue();
 }
 
+function saveNewCookie(cookieStr) {
+    const doc = yaml.load(fs.readFileSync('cookies.yml', 'utf8'));
+    doc.cookies.push(cookieStr);
+    saveYml(doc);
+}
+
+function saveOwnerCookie(cookieStr) {
+    const doc = yaml.load(fs.readFileSync('cookies.yml', 'utf8'));
+    doc.owner = cookieStr;
+    saveYml(doc);
+}
+
 function cleanupCookies() {
     const doc = yaml.load(fs.readFileSync('cookies.yml', 'utf8'));
     let resultCookie = [];
@@ -114,6 +143,11 @@ function cleanupCookies() {
         }
     }
     doc.cookies = resultCookie;
+    saveYml(doc);
+    console.log("cookie filtered")
+}
+
+function saveYml(doc) {
     fs.writeFileSync('cookies.yml', yaml.dump(doc, {
         styles: {
             '!!null': 'canonical', // dump null as ~
@@ -124,5 +158,4 @@ function cleanupCookies() {
         quotingType: '"',
         forceQuotes: true,
     }));
-    console.log("cookie filtered")
 }
