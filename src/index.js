@@ -112,12 +112,13 @@ const bidsURL = 'https://core-api.prod.blur.io/v1/collections/ailoverse-cats/exe
 function blurInterceptor(interceptedRequest) {
     if (interceptedRequest.isInterceptResolutionHandled()) return;
     const url = interceptedRequest.url();
+    const isOwnerMode = process.argv.slice(2).length > 0;
     const skip = url.startsWith('https://images.blur.io') ||
         url.startsWith('https://rdr.blurio.workers.dev') ||
         url.startsWith('https://vitals.vercel-insights.com') ||
         url.endsWith('.otf') ||
         url.endsWith('.png');
-    skip ? interceptedRequest.abort() : interceptedRequest.continue();
+    !isOwnerMode && skip ? interceptedRequest.abort() : interceptedRequest.continue();
 }
 
 function saveNewCookie(cookieStr) {
