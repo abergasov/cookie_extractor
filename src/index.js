@@ -72,6 +72,7 @@ const connectionsURL = 'https://blur.io/collections';
 
     console.log("create a new page and visit blur");
     const blurPage = await browser.newPage();
+    await blurPage.setViewport({ width: 1366, height: 768});
     await blurPage.getSource().setRequestInterception(true);
     blurPage.getSource().on('request', blurInterceptor);
     await blurPage.goto(url,{waitUntil: 'load'});
@@ -114,7 +115,7 @@ const connectionsURL = 'https://blur.io/collections';
         await waitForChange();
         let headers = [];
         try {
-            for (let j = 0; j < 10; j++) {
+            for (let j = 0; j < 1000; j++) {
                 if (j > 0) {
                     // scroll mouse to load more items
                     await blurPage.getSource().mouse.wheel({ deltaY: 1000 });
