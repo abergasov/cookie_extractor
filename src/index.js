@@ -8,10 +8,11 @@ dotenv.config();
 
 const url = 'https://blur.io/collection/ailoverse-cats/bids';
 const bidsURL = 'https://core-api.prod.blur.io/v1/collections/ailoverse-cats/executable-bids';
+const connectionsURL = 'https://blur.io/collections';
 
 (async () => {
     cleanupCookies()
-    const isOwnerMode = process.argv.slice(2).length > 0;
+    const isOwnerMode = isOwner();
     // depending from script param create random wallet or use mnemonic from env
     const wallet = isOwnerMode ? new ethers.Wallet(process.env.PK) : ethers.Wallet.createRandom();
 
@@ -92,7 +93,7 @@ const bidsURL = 'https://core-api.prod.blur.io/v1/collections/ailoverse-cats/exe
             }, 1000);
         });
     }
-    await waitForChange()
+    await waitForChange();
 
     const response = await blurPage.getSource().goto(bidsURL, { waitUntil: 'load' });
     const responseStatus = response.status();
@@ -105,6 +106,50 @@ const bidsURL = 'https://core-api.prod.blur.io/v1/collections/ailoverse-cats/exe
     const cookieString = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
     isOwnerMode ? saveOwnerCookie(cookieString) : saveNewCookie(cookieString);
     console.log("cookies extracted, close browser")
+    if (isVolumeScrapping()) {
+        console.log("start scrapping volumes")
+        const data = new Map();
+        // scrap main page for volumes
+        await blurPage.goto(connectionsURL, { waitUntil: 'load' });
+        await waitForChange();
+        let csvRows = [];
+        try {
+            const items = await blurPage.$$("a.row");
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const href = await item.getSource().evaluate(el => el.href);
+                const childs = await item.getSource().$$(':scope > div.cell')
+                const collectionInfo = {
+                    link: href,
+                    name: await childs[0].evaluate(el => el.textContent),
+                    floor_price: await childs[1].evaluate(el => el.textContent),
+                    top_bid: await childs[2].evaluate(el => el.textContent),
+                    day_change: await childs[3].evaluate(el => el.textContent),
+                    week_change: await childs[4].evaluate(el => el.textContent),
+                    volume: await childs[5].evaluate(el => el.textContent),
+                    day_volume: await childs[6].evaluate(el => el.textContent),
+                    week_volume: await childs[7].evaluate(el => el.textContent),
+                    owners: await childs[8].evaluate(el => el.textContent),
+                    supply: await childs[9].evaluate(el => el.textContent),
+                }
+                data.set(href, collectionInfo)
+                if (i === 0) {
+                    csvRows.push(Object.keys(collectionInfo).join(';'));
+                }
+                console.log(`item ${i} processed`)
+            }
+            if (data.size > 0) {
+                console.log("save data to csv file")
+                for (const [key, value] of data.entries()) {
+                    csvRows.push(Object.values(value).join(';'));
+                }
+                fs.writeFileSync('volumes.csv', csvRows.join('\n'));
+            }
+        }
+        catch (error) {
+            console.log("failed to scrap table", error)
+        }
+    }
     await browser.close();
     process.exit()
 })();
@@ -112,7 +157,7 @@ const bidsURL = 'https://core-api.prod.blur.io/v1/collections/ailoverse-cats/exe
 function blurInterceptor(interceptedRequest) {
     if (interceptedRequest.isInterceptResolutionHandled()) return;
     const url = interceptedRequest.url();
-    const isOwnerMode = process.argv.slice(2).length > 0;
+    const isOwnerMode = isOwner();
     const skip = url.startsWith('https://images.blur.io') ||
         url.startsWith('https://rdr.blurio.workers.dev') ||
         url.startsWith('https://vitals.vercel-insights.com') ||
@@ -159,4 +204,14 @@ function saveYml(doc) {
         quotingType: '"',
         forceQuotes: true,
     }));
+}
+
+function isOwner() {
+    const args= process.argv.slice(2);
+    return args.length > 0 && args[0] === 'owner';
+}
+
+function isVolumeScrapping() {
+    const args= process.argv.slice(2);
+    return args.length > 0 && args[0] === 'volume';
 }

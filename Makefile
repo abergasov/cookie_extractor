@@ -8,3 +8,7 @@ run: run_owner
 run_owner: ## Generate cookie for owner only
 	@echo "-- runn owner"
 	yarn run owner
+
+run_scrap: ## Scrap collections volume data
+	@echo "-- run volume scrapper"
+	yarn run volume

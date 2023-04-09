@@ -8,7 +8,8 @@
   "type": "module",
   "scripts": {
     "dev": "node src/index.js",
-    "owner": "node src/index.js owner"
+    "owner": "node src/index.js owner",
+    "volume": "node src/index.js volume"
   },
   "dependencies": {
     "@chainsafe/dappeteer": "^5.0.1",
