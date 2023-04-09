@@ -112,34 +112,43 @@ const connectionsURL = 'https://blur.io/collections';
         // scrap main page for volumes
         await blurPage.goto(connectionsURL, { waitUntil: 'load' });
         await waitForChange();
-        let csvRows = [];
+        let headers = [];
         try {
-            const items = await blurPage.$$("a.row");
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                const href = await item.getSource().evaluate(el => el.href);
-                const childs = await item.getSource().$$(':scope > div.cell')
-                const collectionInfo = {
-                    link: href,
-                    name: await childs[0].evaluate(el => el.textContent),
-                    floor_price: await childs[1].evaluate(el => el.textContent),
-                    top_bid: await childs[2].evaluate(el => el.textContent),
-                    day_change: await childs[3].evaluate(el => el.textContent),
-                    week_change: await childs[4].evaluate(el => el.textContent),
-                    volume: await childs[5].evaluate(el => el.textContent),
-                    day_volume: await childs[6].evaluate(el => el.textContent),
-                    week_volume: await childs[7].evaluate(el => el.textContent),
-                    owners: await childs[8].evaluate(el => el.textContent),
-                    supply: await childs[9].evaluate(el => el.textContent),
+            for (let j = 0; j < 10; j++) {
+                if (j > 0) {
+                    // scroll mouse to load more items
+                    await blurPage.getSource().mouse.wheel({ deltaY: 1000 });
                 }
-                data.set(href, collectionInfo)
-                if (i === 0) {
-                    csvRows.push(Object.keys(collectionInfo).join(';'));
+                const items = await blurPage.$$("a.row");
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    const href = await item.getSource().evaluate(el => el.href);
+                    const childs = await item.getSource().$$(':scope > div.cell')
+                    const collectionInfo = {
+                        link: href,
+                        name: await childs[0].evaluate(el => el.textContent),
+                        floor_price: await childs[1].evaluate(el => el.textContent),
+                        top_bid: await childs[2].evaluate(el => el.textContent),
+                        day_change: await childs[3].evaluate(el => el.textContent),
+                        week_change: await childs[4].evaluate(el => el.textContent),
+                        volume: await childs[5].evaluate(el => el.textContent),
+                        day_volume: await childs[6].evaluate(el => el.textContent),
+                        week_volume: await childs[7].evaluate(el => el.textContent),
+                        owners: await childs[8].evaluate(el => el.textContent),
+                        supply: await childs[9].evaluate(el => el.textContent),
+                    }
+                    data.set(href, collectionInfo)
+                    if (headers.length === 0) {
+                        headers.push(Object.keys(collectionInfo).join(';'));
+                    }
+                    console.log(`item ${i} processed: ${collectionInfo.name}`)
                 }
-                console.log(`item ${i} processed`)
+                await waitForChange();
             }
             if (data.size > 0) {
                 console.log("save data to csv file")
+                let csvRows = [];
+                csvRows.push(headers.join(';'));
                 for (const [key, value] of data.entries()) {
                     csvRows.push(Object.values(value).join(';'));
                 }
