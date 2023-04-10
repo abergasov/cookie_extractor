@@ -137,6 +137,7 @@ const connectionsURL = 'https://blur.io/collections';
                         week_volume: await childs[7].evaluate(el => el.textContent),
                         owners: await childs[8].evaluate(el => el.textContent),
                         supply: await childs[9].evaluate(el => el.textContent),
+                        total_bid_value: "",
                     }
                     data.set(href, collectionInfo)
                     if (headers.length === 0) {
@@ -144,7 +145,16 @@ const connectionsURL = 'https://blur.io/collections';
                     }
                     console.log(`item ${i} processed: ${collectionInfo.name}`)
                 }
+                console.log(`page ${j} processed, wait for change`)
+               // await waitForChange();
+            }
+            // fill total_bid_value
+            for (const [key, value] of data.entries()) {
+                await blurPage.goto(key + `/bids`, { waitUntil: 'load' });
                 await waitForChange();
+                const totalBidValue = await blurPage.$eval("div.section-header div.sc-jRQBWg.fLhnyg", el => el.textContent);
+                value.total_bid_value = totalBidValue;
+                console.log(`total bid value for ${value.name} is ${totalBidValue}`)
             }
             if (data.size > 0) {
                 console.log("save data to csv file")
