@@ -202,10 +202,22 @@ function cleanupCookies() {
     const doc = yaml.load(fs.readFileSync('cookies.yml', 'utf8'));
     let resultCookie = [];
     for (let cookie of doc.cookies) {
-        const cookieList = cookie.split(';');
-        const decoded = jwt_decode(cookieList[1]);
-        if (decoded.exp > (Date.now() / 1000) + (3 * 86400)) { // 3 days from now
-            resultCookie.push(cookie);
+        try {
+            const cookieList = cookie.split(';');
+            let authCookie = ""
+            for (let i = 0; i < cookieList.length; i++) {
+                if (cookieList[i].includes("authToken")) {
+                    authCookie = cookieList[i];
+                    break;
+                }
+            }
+
+            const decoded = jwt_decode(authCookie);
+            if (decoded.exp > (Date.now() / 1000) + (3 * 86400)) { // 3 days from now
+                resultCookie.push(cookie);
+            }
+        } catch (e) {
+            console.log("failed to parse cookie", cookie)
         }
     }
     doc.cookies = resultCookie;
