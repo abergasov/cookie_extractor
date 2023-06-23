@@ -1,4 +1,4 @@
-run: run_owner
+run: ## run_owner
 	@for i in {1..100}; do \
 		echo "Iteration $$i"; \
 		yarn run dev; \
@@ -12,3 +12,10 @@ run_owner: ## Generate cookie for owner only
 run_scrap: ## Scrap collections volume data
 	@echo "-- run volume scrapper"
 	yarn run volume
+
+run_ankr: ## Scrap collections ankr data
+	@for i in {1..100}; do \
+		echo "Iteration $$i"; \
+		yarn run ankr; \
+		sleep 60; \
+	done

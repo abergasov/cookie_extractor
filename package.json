@@ -9,7 +9,9 @@
   "scripts": {
     "dev": "node src/index.js",
     "owner": "node src/index.js owner",
-    "volume": "node src/index.js volume"
+    "volume": "node src/index.js volume",
+    "observer": "node src/observer.js",
+    "ankr": "node src/ankr.js"
   },
   "dependencies": {
     "@chainsafe/dappeteer": "^5.0.1",
@@ -18,6 +20,8 @@
     "ethers": "^6.1.0",
     "js-yaml": "^4.1.0",
     "jwt-decode": "^3.1.2",
-    "puppeteer": "^19.7.5"
+    "puppeteer": "^19.8.5",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   }
 }
